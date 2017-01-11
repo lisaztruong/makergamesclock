@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="index.css">
+
+<!-- coundown script -->
+<script>
+// Set the date we're counting down to
+var countDownDate = new Date("Jan 5, 2018 15:37:25").getTime();
+
+// Update the count down every 1 second
+var x = setInterval(function() {
+
+    // Get todays date and time
+    var now = new Date().getTime();
+    
+    // Find the distance between now an the count down date
+    var distance = countDownDate - now;
+    
+    // Time calculations for days, hours, minutes and seconds
+    var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Output the result in an element with id="demo"
+    document.getElementById("demo").innerHTML = days + "d " + hours + "h "
+    + minutes + "m " + seconds + "s ";
+    
+    // If the count down is over, write some text 
+    if (distance < 0) {
+        clearInterval(x);
+        document.getElementById("demo").innerHTML = "EXPIRED";
+    }
+}, 1000);
+</script>
+
+<!-- CLOCK SCRIPT -->
+  <script> 
+    //global variables//
+
+      //user inputed variables 
+      var groupNumbers = 0;//variables used to store amount of groups
+      var totalTime = 0;//variable used to get total time of clock, in seconds
+      
+      //variables calculated for clock, in milliseconds 
+      var indivTime = 0;// = totalTime/groupNumbers; 
+      var currentTime=0; //current time in ms, use to compare to startTime
+      var startTime=0; //time when user presses start or continue button 
+      var pauseTime; //time until next interval
+      var interval = 0;//is equal to indiv time, in ms
+      var timeoutID = null;//variable to store setTimeout, for clearTimeout fcn 
+      
+      var timeCounter = 0;//count total time moved
+      var intervalCounter = 0;//current interval clock is at, a factor of interval  
+
+
+      //fcns to set variables to values inputed by user
+      function setGroupNumbers(){
+        groupNumbers = $('#groups').val();
+      }
+
+      function setTotalTime(){
+        totalTime = $('#time').val();
+      }
+
+      function setPauseTime(){
+        pauseTime = indivTime; 
+      }
+
+      function setIndivTime(){
+        //if zero groups, and totalTime != 0, set indivTime to total Time 
+        if ((groupNumbers == 0 || groupNumbers == 1) && totalTime != 0){
+          indivTime = totalTime * 1000;
+        //input both zero, don't run clock and set clockRunning to false value    
+        }else if ((groupNumbers == 0 || groupNumbers == 1) && totalTime == 0){  
+          indivTime = 0;
+        }else {
+          indivTime = totalTime/groupNumbers *1000; 
+        }
+        $("#setIndivTime").html("Individual time: " + (indivTime/1000).toFixed(2) + "(s)");
+      }
+
+      function setInterval(){
+        interval = indivTime;
+      }
+
+      function setTimeCounter(){
+        timeCounter = 0;
+      }
+
+      function setIntervalCounter(){
+        intervalCounter = interval; 
+      }
+
+      function setStartTime(){
+        var d = new Date();
+        startTime = d.getTime();
+      }
+
+      //call fcn to set all values 
+      function setValues(){
+        setGroupNumbers();
+        setTotalTime();
+        setIndivTime();
+        setStartTime();
+        setInterval();
+        setTimeCounter();
+        setPauseTime();
+        setIntervalCounter();
+      }
+
+
+      //fcns for working clock 
+      function startClock(){
+        //set all values & variables
+        setValues();
+        var time = totalTime;
+        var num = groupNumbers;
+
+        //disable start & continue button, bc already running
+        $('#start').prop('disabled', true);
+        $('#continue').prop('disabled', true);
+
+        //set clock to elem so we can pause/run as needed
+        var elem = $('#seconds-container')[0];
+
+        // console.log("Starting Clock, time = " + time + ", groups = " + num);
+
+        //run the clock 
+        elem.style.webkitAnimationPlayState = "running";
+        elem.style.animation = 'rotate ' + time + 's linear';
+
+        //set id so we can cleartimeout later as needed, initial stop is first interval 
+        timeoutID = setTimeout(pauseClock, indivTime);
+      }
+
+      function continueClock(){
+        // console.log("-------------");
+        // console.log("continueClock() called.");
+        $('#pause').prop('disabled', false);
+        $('#continue').prop('disabled', true);
+
+        clearTimeout(timeoutID);
+        //update startTime
+        var d = new Date();
+        var c = d.getTime();
+        startTime = c; 
+        //setTimeout with newly calculated pauseTime 
+        timeoutID = setTimeout(pauseClock, pauseTime);
+        //set animation to running 
+        var elem = $('#seconds-container')[0];
+        elem.style.webkitAnimationPlayState = "running";
+          
+      }
+
+      function pauseClock(){
+        // console.log("-------------");
+        // console.log("pauseClock() called");
+
+        //clear any previous timeouts, enable continue button, disable pause button 
+        clearTimeout(timeoutID);
+        $('#continue').prop('disabled', false);
+        $('#pause').prop('disabled', true);
+
+        //get the current time when clock is paused
+        var d = new Date();
+        var c = d.getTime();
+        currentTime = c; 
+
+        //pauseTime set to interval
+        pauseTime = interval;
+
+        var timePassed = currentTime - startTime;//time passed with last pause/continue
+        timeCounter = timePassed + timeCounter; //total time by clock 
+        
+        //calculate time clock hand needs to move until next interval
+        //increase interval value & update pauseTime values as needed, depending on if pause is called @ interval or by user 
+        if (timeCounter >= intervalCounter){
+          console.log("timeCounter >=  intervalCounter");
+          intervalCounter = intervalCounter + interval;
+          pauseTime = intervalCounter - timeCounter;} else if (timeCounter < intervalCounter){
+          pauseTime = intervalCounter - timeCounter;
+        } 
+
+        // console.log("-pauseTime: " + pauseTime);
+        // console.log("-timeCounter: " + timeCounter);
+        // console.log("-intervalCounter: " + intervalCounter);
+        // console.log("-timePassed: " + timePassed);
+        //pause animations 
+        var elem = $('#seconds-container')[0];
+        elem.style.webkitAnimationPlayState = "paused";
+      }
+
+      //restart clock by clearing any existing timeoutID's and removing attribute and adding back again
+      function restartClock(){
+        //clear any existing timeouts & enable start button
+        clearTimeout(timeoutID);
+        $('start').prop('disabled', false);
+
+        $('.seconds-container').animate({
+        }, function () { $(this).removeAttr('style'); });
+      }
+
+      //when document loads set all values/variables 
+      $( document ).ready(function() {
+          setValues();
+      });
+
+    </script>
+<!-- script for form -->
+    <script>
+      // global variables
+      var money_array; // blank for now
+      var number_of_teams = 0; // default number of teams
+      var default_money = 75; // default amount of money
+      var change_amount = 5; // amount to change money by (increment, decrement)
+      
+      // function to initialize money
+      function initialize_money_array() {
+        money_array = []; // empty it out (in case previously set)
+        // initialize money array
+        for (var i=0; i<number_of_teams; i++) {
+            money_array[i] = default_money; // set each element to the default amount
+          }
+      }
+      
+      //function to create table
+      function create_table () {
+        // clear any current table that might be there
+        $('#content').innerHTML = ""; 
+        
+        // build the HTML string
+        var newHTML = ""; // blank to start
+        newHTML += "<scroll-table>"
+        newHTML += "<table bgcolor=#3E8EDE cellspacing=10>";
+        
+        for (var i=0; i<number_of_teams; i++) {
+            newHTML += "<tr valign='top'>";
+            // first column: team info
+            newHTML += "<td><strong>Team #" + (i+1) + "</strong></td>";
+            // second column: money info
+            newHTML += "<td id='team" + i + "money'>" + money_array[i] + "</td>";
+            // third column: button
+            newHTML += "<td><input type=button id='team" + i + "sub' value='subtract money'></td>";
+            newHTML += "<td><input type=button id='team" + i + "reset' value='reset'></td>";
+            newHTML += "<td><input type=button id='team" + i + "add' value='add money'></td>";
+            newHTML += "<td><strong>Log Materials</strong><br><input type=text id='materials" + i + "add' value=''><input type=button id='team" + i + "addbutton' value='Add Materials'>";
+            newHTML += "<br>";
+            newHTML += "<ul id='team" + i + "materials'></ul>";
+            newHTML += "</td>";
+            newHTML += "</tr>";
+        }
+          
+        newHTML += "</table><br>";
+        newHTML += "</scroll-table>"
+        // set the content to the new value
+        $('#content').html(newHTML);
+      }
+      
+      // function to add money
+      function add_money (team_number) {   
+        // update the team's money in the array
+        money_array[team_number] += change_amount;
+        // display the new amount
+        $('#team' + team_number + 'money').html(money_array[team_number]);
+      }
+      
+      // function to subtact money
+      function sub_money (team_number) {
+        // update the team's money in the array
+        money_array[team_number] -= change_amount;
+        // display the new amount
+        $('#team' + team_number + 'money').html(money_array[team_number]);
+      }
+      // function to reset money
+      function reset_money (team_number) {
+          // update the team's money in the array
+          money_array[team_number] = default_money;
+          // display the new amount
+          $('#team' + team_number + 'money').html(money_array[team_number]);
+      }
+      
+      // function to add materials
+      function add_materials (team_number) { 
+          // add the new material to the list
+          // <ul><li>Paper</li></ul>
+          $('#team' + team_number + 'materials').html($('#team' + team_number + 'materials').html() + "<li>" + $('#materials' + team_number + 'add').val() + "</li>");
+      }
+
+      // setup the functions on the page
+      function setup_functions () {
+          for (var i=0; i<number_of_teams; i++) {
+              $('#team' + i + 'add').click(new Function('add_money(' + i + ');'));
+              $('#team' + i + 'sub').click(new Function('sub_money(' + i + ');'));
+              $('#team' + i + 'reset').click(new Function('reset_money(' + i + ');'));
+              $('#team' + i + 'addbutton').click(new Function('add_materials(' + i + ');'));
+          }
+      }
+
+      function setTeams(){
+          number_of_teams = $('#groups').val();
+      }
+
+      function createInfoSheet(){
+         setTeams();
+         initialize_money_array(); //init money
+         create_table();
+         setup_functions();
+      }
+
+      // when page loads, run this function (setup)
+      $(document).ready(function(){
+          initialize_money_array(); // init money
+          create_table(); // create table in page
+          setup_functions(); // setup the various functions on the page
+          drawClock();
+      });
+  </script>
+
+  <!-- countdown script -->
+<script>
+
+$(document).ready(function(){
+// Set the date we're counting down to
+var countDownDate = new Date("Jan 5, 2018 15:37:25").getTime();
+
+// Update the count down every 1 second
+var x = setInterval(function() {
+
+    // Get todays date and time
+    var now = new Date().getTime();
+    
+    // Find the distance between now an the count down date
+    var distance = countDownDate - now;
+    
+    // Time calculations for days, hours, minutes and seconds
+    var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+    
+    // Output the result in an element with id="demo"
+    // document.getElementById("demo").innerHTML = days + "d " + hours + "h "
+    // + minutes + "m " + seconds + "s ";
+    $('#demo').html(days + "d " + hours + "h "
+    + minutes + "m " + seconds + "s ");
+    
+    // If the count down is over, write some text 
+    if (distance < 0) {
+        clearInterval(x);
+        // document.getElementById("demo").innerHTML = "EXPIRED";
+        $('#demo').html("Expired");
+    }
+}, 1000);});
+
+
+</script>
+
+</head>
+
+<body>
+<!-- ceeo header img of page  -->
+    <div class="image-padding">
+        <img src="http://usnewsstemsolutions.com/wp-content/uploads/2014/04/CEEO-Image.png"  alt="CEEO header" align= "middle" style="width:90%;height:90%;">
+    </div>
+<!-- table empty initially, will be filled in by script -->
+<table>
+    <col width="600px">
+    <col width="600px">
+    
+    <tr valign="top">
+        <th><!--..................... clock canvas.....................-->
+            <canvas div class="canvas" id="canvas" width="400" height="400" style="background-color:transparent;">
+            </canvas>
+
+            <!-- adding images to clock  -->
+            <script>
+              var canvas = $("#canvas")[0];
+              var ctx = canvas.getContext("2d");
+              var radiusA = canvas.height / 2;
+              ctx.translate(radiusA, radiusA);
+              radius = radiusA * 0.65;
+
+              function drawClock() {
+                drawHedghog(ctx, radius);
+              }
+              //ORIGINAL
+              function drawHedghog(ctx, radius) {
+                var groups = $("#groups").val();
+                $("#test").html("groups: " + groups);
+                
+                 //variables for angles 
+                var ang;
+                var num;
+                //create image array
+                //bug?? doesn't work if we use for loop to populate the array
+                var imageArray = new Array();
+                // variable that moves hedghogs outisde of clock
+                var newRadius = radius * 1.4;
+                for (i = 0; i < 15; i++){
+                  imageArray.push("hedgehog.png");
+                }
+                //for loop to put divider hedgehogs on clock 
+                for(num= 0; num < groups; num++){
+                    ang = num * ((2*Math.PI)/groups);
+                    ctx.rotate(ang);
+                    // translate controls where ring of hedgehogs goes
+                    ctx.translate(0, -newRadius*.90);
+                    ctx.rotate(-ang);
+                    
+                    var img = new Image();
+                    img.src = imageArray[num];
+                    ctx.drawImage(img, -32, -39);
+                    ctx.rotate(ang);
+                    ctx.translate(0, newRadius*.90);
+                    ctx.rotate(-ang);
+                }
+              }
+             </script>
+
+            <div id = "container">
+              <!-- clock container -->
+              <div id = "clock">
+                  <!-- clock  -->
+                  <article class="clock">
+                      <div class="seconds-container" id = "seconds-container">
+                          <div class="seconds"></div>
+                      </div>
+                  </article>
+              </div>
+            </div>
+            <div id = "form">
+              <form> 
+                  <!-- input -->
+                  <br>
+                  Time: 
+                  <input  id="time" type = "number"  name="totalTime" min = "0" max = "1000000" required>(s) 
+                  <br>
+
+                  Groups: 
+                  <input id="groups" type="number" name="groupnumbers"  min = "0" max = "12" required>
+                  <br>
+
+                  <!-- buttons -->
+                  <div class="button_wrapper">
+                     <input class="start" id = "start" name = "submitbutton" type="button"   value = "start" onclick="startClock();createInfoSheet()">
+                     <input  id = "drawHedghog" type="button" name = "drawHedghog" value = "hedgehog*" onclick="drawClock();return false">
+                     <input  id = "pause" type="button" name = "pausebutton" value = "pause" onclick="pauseClock()">
+                     <input id = "continue" type="button" name = "continuebutton" value = "continue" onclick="continueClock()">
+                     <input id = "restart" type = "button" value = "restart" onclick = "restartClock()">
+                  </div>
+
+              </form>
+              <div>
+            <p id="demo"> *press hedgehog button twice for a surprise </p>
+            <!-- <p id="demo"></p> -->
+            </div>
+
+            <p id = "setIndivTime"></p>
+            
+          </div>
+        </div>
+      </th><!--..................... end clock.....................-->
+
+        <countdown id="demo"></countdown>
+
+      <th><!--..................... information .....................-->
+
+
+            <div id="content" class="scrollingContainer"></div>
+            
+      </th><!--..................... end information .....................-->
+  </tr>
+</body>
+</html> 
