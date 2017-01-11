@@ -1,2 +1,4 @@
-# test.github.io
-for me to test code quickly
+# makergamesclock lisa
+
+hosted project for live demo
+accessible at https://lisaztruong.github.io/makergamesclock/
